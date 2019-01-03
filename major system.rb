@@ -67,7 +67,8 @@ class MajorSystem
   
   def dictionary_dive(consonants)
     #time to actually go into the dictionary
-    consonants.match(@dictionary)
+    candidates_string = @dictionary.scan(consonants)
+    candidates = candidates_string.to_a
   end
 
 
