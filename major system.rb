@@ -68,11 +68,15 @@ class MajorSystem
   def dictionary_dive(consonants)
     #time to actually go into the dictionary
     candidates_string = @dictionary.scan(consonants)
+    #storing the found word strings into an array
     candidates = candidates_string.to_a
+    #edge case if there is a set of consonants that simply do not return any word
+    if candidates.length == 0 
+      consonants.to_s
+      return
+    end
     candidates.sample
   end
-
-
 end
 
 
