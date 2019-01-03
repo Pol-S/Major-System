@@ -69,6 +69,7 @@ class MajorSystem
     #time to actually go into the dictionary
     candidates_string = @dictionary.scan(consonants)
     candidates = candidates_string.to_a
+    candidates.sample
   end
 
 
