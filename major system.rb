@@ -76,15 +76,12 @@ class MajorSystem
   end
 
   def fetch_candidate(translated_tuples)
-    puts translated_tuples.size
     return if translated_tuples.empty?
     consonants = make_consonants_pattern(translated_tuples.first)
-    puts consonants
     word_candidate = get_word_candidate(consonants)
     if word_candidate.nil?
-      x = translated_tuples.shift
-      puts x
-      fetch_candidate(translated_tuples.shuffle)
+      translated_tuples.shift
+      return fetch_candidate(translated_tuples.shuffle)
     end
     word_candidate
   end
@@ -103,7 +100,7 @@ class MajorSystem
   
   def get_word_candidate(consonants)
     candidates = dictionary.select do |word| 
-      word =~ consonants
+      word =~ consonants 
     end
     candidates.sample
   end
