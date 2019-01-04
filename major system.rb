@@ -9,16 +9,22 @@ class MajorSystem
     '6' => ['CH', 'J', 'SH'],
     '7' => ['G', 'K'],
     '8' => ['F', 'PH', 'V'],
-    '9' => ['B', 'P']
+    '9' => ['B', 'P']                           
   }
 
-  def initialize
-    @dictionary ||= IO.read("words.txt")
+  def ask
     puts 'Hi. What long number do you want to convert into words?'
     request_input 
   end
 
-  private 
+  private
+
+  def dictionary
+    @dictionary ||= begin
+      words_string = IO.read('words.txt')
+      dictionary = words_string.split("\n")
+    end
+  end
 
   def request_input
     user_number = gets.strip
@@ -37,7 +43,6 @@ class MajorSystem
   def correct_format?(formatted_input)
     character_array = formatted_input.split('')
     character_array.all? do |each_char| 
-      #each_char.match?(/[0-9]/)
       each_char =~ /\d/
     end
   end
@@ -52,28 +57,49 @@ class MajorSystem
     puts words
   end
 
-  def translate(tuple)   
-    # Get a string with the right characters for the regex
-    letter_string = '\n'
-    tuple.each do |number|
-      letter_string << MAJOR[number].sample
-      letter_string << '.+'
-      end
-    # Actually turning it into a regex
-    consonants = Regexp.new(letter_string.downcase)
-    #now diving into the dictionary for a word with these consonants
-    found_words = dictionary_dive(consonants)
+  def translate(tuple)
+    #get an array of arrays
+    letter_choices = tuple.map { |number| MAJOR[number] }
+    #take the first array out of the larger array
+    first_set = letter_choices.shift
+    #starting with the first array as our base case, we do the x.product(y)...
+    #process across the entire board.
+    #inject maintains state beteween each element of the iteration, continuously
+    #building up the greater set of combinations
+    translated_tuples = letter_choices.inject(first_set) do |combination, choices|
+      combination.product(choices)
+    end
+    # we smoosh it down so we don't have a jagged array
+    translated_tuples = translated_tuples.map(&:flatten)
+    fetch_candidate(translated_tuples.shuffle)
+  end
+
+  def fetch_candidate(translated_tuples)
+    return if translated_tuples.empty?
+    consonants = make_consonants_pattern(translated_tuples.first)
+    word_candidate = get_word_candidate(consonants)
+    if word_candidate.empty?
+      translated_tuples.shift
+      fetch_candidate(translated_tuples.shuffle)
+    end
+    word_candidate
   end
   
-  def dictionary_dive(consonants)
-    #time to actually go into the dictionary
-    candidates_string = @dictionary.scan(consonants)
-    #storing the found word strings into an array
-    candidates = candidates_string.to_a
-    #edge case if there is a set of consonants that simply do not return any word
-    if candidates.length == 0 
-      consonants.to_s
-      return
+  def make_consonants_pattern(translated_tuples)
+    letter_string = '^'
+    translated_tuples.each do |value|
+      letter_string << value
+      letter_string << '.+'
+    end
+    letter_string.chop!.chop!
+    letter_string << '$'
+    # Actually turning it into a regex
+    Regexp.new(letter_string.downcase)
+  end
+  
+  def get_word_candidate(consonants)
+    candidates = dictionary.select do |word| 
+      word =~ consonants && word.size <= rand(6..12)
     end
     candidates.sample
   end
@@ -81,3 +107,4 @@ end
 
 
 test=MajorSystem.new
+test.ask
