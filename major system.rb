@@ -76,7 +76,7 @@ class MajorSystem
   end
 
   def fetch_candidate(translated_tuples)
-    return if translated_tuples.empty?
+    return 'ERROR' if translated_tuples.empty? 
     consonants = make_consonants_pattern(translated_tuples.first)
     word_candidate = get_word_candidate(consonants)
     if word_candidate.nil?
