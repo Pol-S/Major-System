@@ -62,6 +62,7 @@ class MajorSystem
     letter_choices = tuple.map { |number| MAJOR[number] }
     #take the first array out of the larger array
     first_set = letter_choices.shift
+    letter_choices << ['END'] if letter_choices.empty?
     #starting with the first array as our base case, we do the x.product(y)...
     #process across the entire board.
     #inject maintains state beteween each element of the iteration, continuously
@@ -75,11 +76,14 @@ class MajorSystem
   end
 
   def fetch_candidate(translated_tuples)
+    puts translated_tuples.size
     return if translated_tuples.empty?
     consonants = make_consonants_pattern(translated_tuples.first)
+    puts consonants
     word_candidate = get_word_candidate(consonants)
-    if word_candidate.empty?
-      translated_tuples.shift
+    if word_candidate.nil?
+      x = translated_tuples.shift
+      puts x
       fetch_candidate(translated_tuples.shuffle)
     end
     word_candidate
@@ -99,7 +103,7 @@ class MajorSystem
   
   def get_word_candidate(consonants)
     candidates = dictionary.select do |word| 
-      word =~ consonants && word.size <= rand(6..12)
+      word =~ consonants
     end
     candidates.sample
   end
