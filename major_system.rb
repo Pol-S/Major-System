@@ -1,9 +1,10 @@
-require './user_input'
 require './word_list'
 require 'pry'
 
 class MajorSystem
-  MAJOR = {
+  attr_accessor :digit_string, :mnemonic_words
+
+  CONSONANTS_BY_DIGIT = {
     '0' => ['S','Z'],
     '1' => ['D', 'T', 'TH'],
     '2' => ['N'],
@@ -16,74 +17,76 @@ class MajorSystem
     '9' => ['B', 'P']                           
   }
 
-  def ask
-    puts 'Hi. What long number do you want to convert into words?'
-    formatted_input = UserInput.request_input 
-    translate_input(formatted_input)
+  def initialize(digit_string)
+    translate(digit_string)
+  end
+
+  def translate(digit_string)
+    formatted_string = format_input(digit_string)
+    raise ArgumentError.new 'Not all digits' if !correct_format?(formatted_string)
+    @digit_string = formatted_string    
+    @mnemonic_words = translate_formatted_string(digit_string) if correct_format?(@digit_string)
   end
 
   private
 
-  def translate_input(formatted_input)
-    #put it in an array
-    number_array = formatted_input.split('')
-    #slice the array into chunks of 3
-    chunks = number_array.each_slice(3).to_a
-    #call translate
-    chunks.map {|tuple| translate(tuple)}     
+  def translate_formatted_string(digit_string)
+    # '1234567' -> ['1', '2', '3', '4', '5', '6', '7']
+    digit_set = digit_string.split('')
+    # [['1', '2', '3'], ['4', '5', '6'], ['7']]
+    digit_sets = digit_set.each_slice(3).to_a
+    digit_sets.map do |digits| 
+      translate_to_mnemonic_word(digits)
+    end     
   end
 
-  def translate(tuple)
-    #get an array of arrays
-    letter_choices = tuple.map { |number| MAJOR[number] }
-    #take the first array out of the larger array
-    first_set = letter_choices.shift
-    letter_choices << ['END'] if letter_choices.empty?
-    #starting with the first array as our base case, we do the x.product(y)...
-    #process across the entire board.
-    #inject maintains state beteween each element of the iteration, continuously
-    #building up the greater set of combinations
-    translated_tuples = letter_choices.inject(first_set) do |combination, choices|
-      combination.product(choices)
-    end
-    # we smoosh it down so we don't have a jagged array
-    translated_tuples = translated_tuples.map(&:flatten)
-    fetch_candidate(translated_tuples.shuffle)
+  def format_input(digit_string)
+    digit_string.gsub(/[\.\,\s]/, '')
   end
 
-  def fetch_candidate(translated_tuples)
-    return 'ERROR' if translated_tuples.empty? 
-    consonants = make_consonants_pattern(translated_tuples.first)
-    word_candidate = get_word_candidate(consonants)
-    if word_candidate.nil?
-      translated_tuples.shift
-      return fetch_candidate(translated_tuples.shuffle)
+  def correct_format?(formatted_string)
+    formatted_string.scan(/\D/).empty?
+  end
+
+  def translate_to_mnemonic_word(digits)
+    consonant_sets = digits.map { |digit| CONSONANTS_BY_DIGIT[digit] }
+    consonant_combos = create_consonant_combos(consonant_sets)
+    find_mnemonic_word(consonant_combos)
+  end
+
+  def create_consonant_combos(consonant_sets)
+    first_set = consonant_sets.shift
+    consonant_sets << ['END'] if consonant_sets.empty?
+    consonant_combos = consonant_sets.inject(first_set) do |combination, set|
+      combination.product(set)
     end
-    word_candidate
+    consonant_combos.map(&:flatten)
+  end
+
+  def find_mnemonic_word(consonant_combos)
+    consonant_combos = consonant_combos.shuffle
+    return 'ERROR' if consonant_combos.empty? 
+    consonants_pattern = create_consonants_pattern(consonant_combos.first)
+    matched_word = match_word(consonants_pattern)
+    return find_mnemonic_word(consonant_combos[1..-1]) if matched_word.nil?
+    matched_word
   end
   
-  def make_consonants_pattern(translated_tuples)
-    letter_string = '^'
-    translated_tuples.each do |value|
-      letter_string << value
-      letter_string << '.+'
+  def create_consonants_pattern(consonant_combos)
+    pattern = '^'
+    consonant_combos.each do |value|
+      pattern << value
+      pattern << '.+'
     end
-    letter_string.chop!.chop!
-    letter_string << '$'
-    # Actually turning it into a regex
-    Regexp.new(letter_string.downcase)
+    pattern.chop!.chop!
+    pattern << '$'
+    Regexp.new(pattern.downcase)
   end
   
-  def get_word_candidate(consonants)
+  def match_word(consonants)
     candidates = WordList.dictionary.select do |word| 
       word =~ consonants 
     end
     candidates.sample
   end
 end
-
-
-
-
-test = MajorSystem.new
-test.ask
